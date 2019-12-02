@@ -1,0 +1,137 @@
+diff -Naur orig/res/layout/fpv_whole_attitude_view.xml mod/res/layout/fpv_whole_attitude_view.xml
+--- orig/res/layout/fpv_whole_attitude_view.xml	2019-12-02 14:30:01.744262400 +0200
++++ mod/res/layout/fpv_whole_attitude_view.xml	2019-12-02 20:15:05.491780800 +0200
+@@ -8,6 +8,8 @@
+         <dji.pilot.publics.widget.AttiFontTextView android:textSize="@dimen/new_fpv_attitude_txt_big_size" android:textColor="@color/white" android:ellipsize="end" android:id="@id/attitude_distance_value" android:layout_width="@dimen/dp_100_in_sw320dp" android:layout_height="wrap_content" android:layout_marginLeft="@dimen/dp_5_in_sw320dp" android:text="N/A" android:maxLines="1" android:layout_toRightOf="@id/attitude_distance_title" phantom:attiTextFace="pirulen" />
+         <dji.pilot.publics.widget.AttiFontTextView android:textSize="@dimen/new_fpv_attitude_txt_small_size" android:textColor="@color/white" android:id="@id/attitude_height_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="@dimen/dp_120_in_sw320dp" android:text="H" android:layout_alignBaseline="@id/attitude_height_value" android:alpha="0.6" phantom:attiTextFace="pirulen" />
+         <dji.pilot.publics.widget.AttiFontTextView android:textSize="@dimen/new_fpv_attitude_txt_big_size" android:textColor="@color/white" android:ellipsize="end" android:id="@id/attitude_height_value" android:layout_width="@dimen/dp_110_in_sw320dp" android:layout_height="wrap_content" android:layout_marginLeft="@dimen/dp_5_in_sw320dp" android:text="N/A" android:maxLines="1" android:layout_toRightOf="@id/attitude_height_title" phantom:attiTextFace="pirulen" />
++        <dji.pilot.publics.widget.AttiFontTextView android:textSize="@dimen/new_fpv_attitude_txt_small_size" android:textColor="@color/white" android:id="@id/fpv_sport_attitude_rpm_desc_tv" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="@dimen/s_246_dp" android:text="RPM" android:layout_alignBaseline="@id/attitude_height_value" android:alpha="0.6" phantom:attiTextFace="pirulen" />
++        <dji.pilot.publics.widget.AttiFontTextView android:textSize="@dimen/new_fpv_attitude_txt_small_size" android:textColor="@color/white" android:ellipsize="end" android:id="@id/fpv_sport_attitude_rpm_tv" android:layout_width="@dimen/dp_110_in_sw320dp" android:layout_height="wrap_content" android:layout_marginLeft="@dimen/s_290_dp" android:text="N/A" android:maxLines="1" android:layout_alignBaseline="@id/attitude_height_value" phantom:attiTextFace="pirulen" />
+     </RelativeLayout>
+     <RelativeLayout android:orientation="horizontal" android:id="@id/attitude_speed_vps_ly" android:paddingBottom="@dimen/dp_10_in_sw320dp" android:layout_width="wrap_content" android:layout_height="@dimen/dp_30_in_sw320dp" android:layout_marginLeft="@dimen/dp_10_in_sw320dp" android:layout_alignBottom="@id/fpv_whole_atti_ly" android:layout_alignParentBottom="true">
+         <dji.pilot.publics.widget.AttiFontTextView android:textSize="@dimen/new_fpv_attitude_txt_small_size" android:textColor="@color/white" android:id="@id/attitude_h_speed_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="H.S" android:layout_alignParentBottom="true" android:alpha="0.6" phantom:attiTextFace="pirulen" />
+diff -Naur orig/smali_classes5/dji/pilot/newfpv/view/WholeAttitudeView.smali mod/smali_classes5/dji/pilot/newfpv/view/WholeAttitudeView.smali
+--- orig/smali_classes5/dji/pilot/newfpv/view/WholeAttitudeView.smali	2019-12-02 14:30:16.484972500 +0200
++++ mod/smali_classes5/dji/pilot/newfpv/view/WholeAttitudeView.smali	2019-12-02 20:15:10.460312600 +0200
+@@ -111,6 +111,9 @@
+ 
+ .field private z:Ldji/pilot/fpv/control/DJIGenSettingDataManager;
+ 
++.field private rpm_text_view:Landroid/widget/TextView;
++
++.field private rpm:F
+ 
+ # direct methods
+ .method static constructor <clinit>()V
+@@ -293,6 +296,10 @@
+ 
+     iput-object v0, p0, Ldji/pilot/newfpv/view/WholeAttitudeView;->J:Ldji/sdksharedlib/b/c;
+ 
++    const v2, 0x46fffe00    # 32767.0f
++
++    iput v2, p0, Ldji/pilot/newfpv/view/WholeAttitudeView;->rpm:F
++
+     .line 114
+     sget-object v0, Ldji/pilot/newfpv/view/b$a;->e:Ldji/pilot/newfpv/view/b$a;
+ 
+@@ -469,6 +476,10 @@
+ 
+     invoke-virtual {v0, v1}, Landroid/widget/TextView;->setText(I)V
+ 
++    iget-object v0, p0, Ldji/pilot/newfpv/view/WholeAttitudeView;->rpm_text_view:Landroid/widget/TextView;
++
++    invoke-virtual {v0, v1}, Landroid/widget/TextView;->setText(I)V
++
+     .line 163
+     iget-object v0, p0, Ldji/pilot/newfpv/view/WholeAttitudeView;->k:Landroid/widget/ImageView;
+ 
+@@ -1693,9 +1704,72 @@
+     .line 505
+     invoke-direct {p0}, Ldji/pilot/newfpv/view/WholeAttitudeView;->k()V
+ 
++    invoke-direct {p0}, Ldji/pilot/newfpv/view/WholeAttitudeView;->set_rpm()V
++
+     goto :goto_0
+ .end method
+ 
++.method private set_rpm()V
++    .locals 8
++
++    .prologue
++    const/4 v7, 0x1
++
++    const/4 v4, 0x0
++
++    invoke-static {}, Ldji/midware/data/model/P3/DataFlycGetPushPowerParam;->getInstance()Ldji/midware/data/model/P3/DataFlycGetPushPowerParam;
++
++    move-result-object v0
++
++    invoke-virtual {v0}, Ldji/midware/data/model/P3/DataFlycGetPushPowerParam;->getEscAverageSpeed()F
++
++    move-result v0
++
++    iget v1, p0, Ldji/pilot/newfpv/view/WholeAttitudeView;->rpm:F
++
++    sub-float v1, v0, v1
++
++    invoke-static {v1}, Ljava/lang/Math;->abs(F)F
++
++    move-result v1
++
++    const/high16 v5, 0x3f800000    # 1.0f
++
++    cmpl-float v1, v1, v5
++
++    if-ltz v1, :cond_0
++
++    iput v0, p0, Ldji/pilot/newfpv/view/WholeAttitudeView;->rpm:F
++
++    iget-object v1, p0, Ldji/pilot/newfpv/view/WholeAttitudeView;->rpm_text_view:Landroid/widget/TextView;
++
++    const-string v5, "fBp9Jg=="
++
++    invoke-static {v5}, Lcom/dji/f/a/a/b;->a(Ljava/lang/String;)Ljava/lang/String;
++
++    move-result-object v5
++
++    new-array v6, v7, [Ljava/lang/Object;
++
++    float-to-int v0, v0
++
++    invoke-static {v0}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;
++
++    move-result-object v0
++
++    aput-object v0, v6, v4
++
++    invoke-static {v5, v6}, Ljava/lang/String;->format(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;
++
++    move-result-object v0
++
++    invoke-virtual {v1, v0}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
++
++    :cond_0
++    return-void
++
++.end method
++
+ .method private k()V
+     .locals 10
+ 
+@@ -3295,6 +3369,16 @@
+ 
+     iput-object v0, p0, Ldji/pilot/newfpv/view/WholeAttitudeView;->j:Landroid/widget/ImageView;
+ 
++    const v0, 0x7f0b07e8
++
++    invoke-virtual {p0, v0}, Ldji/pilot/newfpv/view/WholeAttitudeView;->findViewById(I)Landroid/view/View;
++
++    move-result-object v0
++
++    check-cast v0, Landroid/widget/TextView;
++
++    iput-object v0, p0, Ldji/pilot/newfpv/view/WholeAttitudeView;->rpm_text_view:Landroid/widget/TextView;
++
+     .line 141
+     invoke-virtual {p0}, Ldji/pilot/newfpv/view/WholeAttitudeView;->getResources()Landroid/content/res/Resources;
+ 
